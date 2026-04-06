@@ -1,0 +1,1811 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const YaseenBillingApp());
+}
+
+class YaseenBillingApp extends StatelessWidget {
+  const YaseenBillingApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Yaseen Billing',
+      debugShowCheckedModeBanner: false,
+      home: YaseenBillingAppScreen(),
+    );
+  }
+}
+
+// Constants
+const int DRUM_RATE = 12;
+const int BAG_RATE = 8;
+
+class YaseenBillingAppScreen extends StatefulWidget {
+  @override
+  State<YaseenBillingAppScreen> createState() => _YaseenBillingAppScreenState();
+}
+
+class _YaseenBillingAppScreenState extends State<YaseenBillingAppScreen> {
+  // Global variables
+  DateTime? currentDate;
+  int totalEntries = 0;
+  int currentEntry = 0;
+  List<Map<String, dynamic>> entries = [];
+  int editingIndex = -1;
+
+  // Controllers
+  TextEditingController totalEntriesController = TextEditingController();
+  TextEditingController dayController = TextEditingController();
+  TextEditingController monthController = TextEditingController();
+  TextEditingController yearController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border(
+                    bottom: BorderSide(color: Color(0xFF5A67D8), width: 5)),
+              ),
+              child: Column(
+                children: [
+                  Text('Yaseen Billing System',
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
+                  SizedBox(height: 8),
+                  Text(
+                      'Manual date control - You control when to advance the date',
+                      style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Step Indicator
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStepIndicator(
+                      1, 'Set Entries', totalEntries > 0, totalEntries > 0),
+                  SizedBox(width: 20),
+                  _buildStepIndicator(
+                      2, 'Set Date', currentDate != null, currentDate != null),
+                  SizedBox(width: 20),
+                  _buildStepIndicator(
+                      3, 'Add Entries', entries.isNotEmpty, entries.isNotEmpty),
+                  SizedBox(width: 20),
+                  _buildStepIndicator(
+                      4, 'Export', entries.isNotEmpty, entries.isNotEmpty),
+                  SizedBox(width: 16),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Status Bar
+            Container(
+              margin: EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatusItem('$totalEntries', 'Total Entries'),
+                  _buildStatusItem('$currentEntry', 'Current Entries'),
+                  _buildStatusItem(
+                      '${totalEntries - currentEntry}', 'Remaining'),
+                ],
+              ),
+            ),
+            SizedBox(height: 22),
+
+            // Main Content Row
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Control Panel
+                  _buildControlPanel(),
+                  // Entries Summary
+                  _buildEntriesSummary(),
+                ],
+              ),
+            ),
+            SizedBox(height: 23),
+
+            // Total Summary
+            _buildTotalSummary(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator(
+      int step, String label, bool isCompleted, bool isActive) {
+    Color gradientColor1, gradientColor2, textColor;
+
+    if (isCompleted) {
+      gradientColor1 = Color(0xFF48BB78);
+      gradientColor2 = Color(0xFF38A169);
+      textColor = Colors.white;
+    } else if (isActive) {
+      gradientColor1 = Color(0xFFFF7B6B);
+      gradientColor2 = Color(0xFFFF5A5A);
+      textColor = Colors.white;
+    } else {
+      gradientColor1 = Color(0xFFE2E8F0);
+      gradientColor2 = Color(0xFFCBD5E0);
+      textColor = Color(0xFF718096);
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [gradientColor1, gradientColor2],
+            ),
+          ),
+          child: Center(
+            child: Text(
+              '$step',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: isActive ? Color(0xFFFF7B6B) : Color(0xFF718096),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusItem(String value, String label) {
+    return Column(
+      children: [
+        Text(value,
+            style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF5A67D8))),
+        SizedBox(height: 6),
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF718096),
+                fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildControlPanel() {
+    return Container(
+      width: 400,
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFFFF7B6B),
+            width: 4,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.task, size: 22, color: Color(0xFF5A67D8)),
+                SizedBox(width: 10),
+                Text(
+                  'Control Panel',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF5A67D8)),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              children: [
+                InkWell(
+                  onTap: () => _openStep1Window(),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.settings, size: 18, color: Colors.white),
+                          SizedBox(width: 10),
+                          Text(
+                            'Step 1: Setup Entries',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _openStep2Window(),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: currentDate != null
+                          ? LinearGradient(
+                              colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)])
+                          : LinearGradient(
+                              colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E0)]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.calendar_today,
+                              size: 18,
+                              color: currentDate != null
+                                  ? Colors.white
+                                  : Color(0xFF718096)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Step 2: Set Date',
+                            style: TextStyle(
+                              color: currentDate != null
+                                  ? Colors.white
+                                  : Color(0xFF718096),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _openStep3Window(),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: entries.isNotEmpty
+                          ? LinearGradient(
+                              colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)])
+                          : LinearGradient(
+                              colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E0)]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_circle,
+                              size: 18,
+                              color: entries.isNotEmpty
+                                  ? Colors.white
+                                  : Color(0xFF718096)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Step 3: Add Entry',
+                            style: TextStyle(
+                              color: entries.isNotEmpty
+                                  ? Colors.white
+                                  : Color(0xFF718096),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12),
+                InkWell(
+                  onTap: () =>
+                      _showNotification('Export Excel - Coming Soon', 'info'),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E0)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.file_download,
+                              size: 18, color: Color(0xFF718096)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Step 4: Export Excel',
+                            style: TextStyle(
+                              color: Color(0xFF718096),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntriesSummary() {
+    if (entries.isEmpty) {
+      return Container(
+        width: 400,
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+          border: Border(
+            top: BorderSide(color: Color(0xFFFF7B6B), width: 4),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.list_alt, size: 22, color: Color(0xFF5A67D8)),
+                  SizedBox(width: 10),
+                  Text(
+                    'Entries Summary',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF5A67D8)),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.assignment, size: 64, color: Color(0xFFCBD5E0)),
+                  SizedBox(height: 16),
+                  Text(
+                    'No entries yet',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748)),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Add your first entry to see the summary here',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF718096)),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: 400,
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(color: Color(0xFFFF7B6B), width: 4),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.list_alt, size: 22, color: Color(0xFF5A67D8)),
+                SizedBox(width: 10),
+                Text(
+                  'Entries Summary',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF5A67D8)),
+                ),
+              ],
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 12,
+              columns: [
+                DataColumn(
+                    label: Text('Date',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text('Drums',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text('Bags',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text('Total',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text('Persons',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text('Actions',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+              ],
+              rows: entries.asMap().entries.map((entry) {
+                int index = entry.key;
+                Map<String, dynamic> e = entry.value;
+                return DataRow(cells: [
+                  DataCell(Text(e['date'])),
+                  DataCell(Text('${e['drums']}')),
+                  DataCell(Text('${e['bags']}')),
+                  DataCell(Text('Rs.${e['total']}',
+                      style: TextStyle(
+                          color: Color(0xFFFF7B6B),
+                          fontWeight: FontWeight.bold))),
+                  DataCell(Text(e['persons'].join(', '))),
+                  DataCell(Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit,
+                            size: 18, color: Color(0xFFF6AD55)),
+                        onPressed: () => _editEntry(index),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete,
+                            size: 18, color: Color(0xFFF56565)),
+                        onPressed: () => _deleteEntry(index),
+                      ),
+                    ],
+                  )),
+                ]);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalSummary() {
+    if (entries.isEmpty) {
+      return Container(
+        width: 400,
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+          border: Border(
+            top: BorderSide(color: Color(0xFFFF7B6B), width: 4),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.summarize, size: 22, color: Color(0xFF5A67D8)),
+                  SizedBox(width: 10),
+                  Text(
+                    'Total Summary',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF5A67D8)),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.summarize, size: 64, color: Color(0xFFCBD5E0)),
+                  SizedBox(height: 16),
+                  Text(
+                    'No Summary yet',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748)),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Add entries to see summary here',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF718096)),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    int totalDrums = 0;
+    int totalBags = 0;
+    int totalAmount = 0;
+
+    for (var entry in entries) {
+      totalDrums += entry['drums'] as int;
+      totalBags += entry['bags'] as int;
+      totalAmount += entry['total'] as int;
+    }
+
+    return Container(
+      width: 400,
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(color: Color(0xFFFF7B6B), width: 4),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.summarize, size: 22, color: Color(0xFF5A67D8)),
+                SizedBox(width: 10),
+                Text(
+                  'Total Summary',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF5A67D8)),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSummaryItem('$totalDrums', 'Total Drums'),
+                _buildSummaryItem('$totalBags', 'Total Bags'),
+                _buildSummaryItem('${entries.length}', 'Total Entries'),
+                _buildSummaryItem('Rs.$totalAmount', 'Total Amount'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String value, String label) {
+    return Column(
+      children: [
+        Text(value,
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF7B6B))),
+        SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: Color(0xFF718096))),
+      ],
+    );
+  }
+
+  // ==================== LOGIC METHODS ====================
+
+  void _openStep1Window() {
+    showDialog(
+      context: context,
+      builder: (context) => _Step1Dialog(
+        totalEntries: totalEntries,
+        onSave: (value) {
+          setState(() {
+            totalEntries = value;
+            currentEntry = 0;
+            entries.clear();
+            editingIndex = -1;
+            _updateStepIndicator();
+          });
+          _showNotification(
+              'Set to $totalEntries entries. Now set the date.', 'success');
+        },
+      ),
+    );
+  }
+
+  void _openStep2Window() {
+    if (totalEntries == 0) {
+      _showNotification('Please set total entries first', 'error');
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (context) => _Step2Dialog(
+        currentDate: currentDate,
+        onSave: (date) {
+          setState(() {
+            currentDate = date;
+            _updateStepIndicator();
+          });
+          _showNotification('Date set. You can now add entries.', 'success');
+        },
+      ),
+    );
+  }
+
+  void _openStep3Window() {
+    if (totalEntries == 0) {
+      _showNotification('Please set total entries first', 'error');
+      return;
+    }
+    if (currentDate == null) {
+      _showNotification('Please set date first', 'error');
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (context) => _Step3Dialog(
+        currentDate: currentDate!,
+        editingIndex: editingIndex,
+        editingEntry: editingIndex >= 0 ? entries[editingIndex] : null,
+        onSave: (entry) {
+          setState(() {
+            if (editingIndex >= 0) {
+              entries[editingIndex] = entry;
+              editingIndex = -1;
+              _showNotification('Entry updated successfully', 'success');
+            } else {
+              entries.add(entry);
+              currentEntry++;
+              _showNotification(
+                  'Entry ${entries.length} added successfully', 'success');
+            }
+            _updateStepIndicator();
+          });
+        },
+      ),
+    );
+  }
+
+  void _editEntry(int index) {
+    editingIndex = index;
+    _openStep3Window();
+  }
+
+  void _deleteEntry(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Entry'),
+        content: Text('Are you sure you want to delete entry ${index + 1}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                entries.removeAt(index);
+                currentEntry = entries.length;
+                if (editingIndex == index) editingIndex = -1;
+                if (editingIndex > index) editingIndex--;
+                _updateStepIndicator();
+              });
+              Navigator.pop(context);
+              _showNotification(
+                  'Entry ${index + 1} deleted successfully', 'success');
+            },
+            child: Text('Delete', style: TextStyle(color: Color(0xFFF56565))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateStepIndicator() {
+    // This will trigger rebuild
+    setState(() {});
+  }
+
+  void _showNotification(String message, String type) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: type == 'success'
+            ? Color(0xFF48BB78)
+            : type == 'error'
+                ? Color(0xFFF56565)
+                : Color(0xFF5BA8FF),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+}
+
+// ==================== STEP 1 DIALOG ====================
+
+class _Step1Dialog extends StatefulWidget {
+  final int totalEntries;
+  final Function(int) onSave;
+
+  const _Step1Dialog({required this.totalEntries, required this.onSave});
+
+  @override
+  State<_Step1Dialog> createState() => _Step1DialogState();
+}
+
+class _Step1DialogState extends State<_Step1Dialog> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+        text: widget.totalEntries > 0 ? '${widget.totalEntries}' : '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(top: BorderSide(color: Color(0xFFFF7B6B), width: 4)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.settings, size: 18, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('Step 1: Setup Entries',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            Text('How many entries do you need?',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748))),
+            SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Enter total number of entries',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: Color(0xFFFF7B6B), width: 2),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    int value = int.tryParse(_controller.text) ?? 0;
+                    if (value > 0) {
+                      widget.onSave(value);
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text('Please enter a valid number'),
+                            backgroundColor: Color(0xFFF56565)),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFFF7B6B),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                  child: Text('Set Entries & Continue',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [Color(0xFFF7FAFC), Color(0xFFEDF2F7)]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Color(0xFFFF7B6B).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(children: [
+                    Text('Rs.12',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF7B6B))),
+                    Text('Per Drum')
+                  ]),
+                  Column(children: [
+                    Text('Rs.8',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFF7B6B))),
+                    Text('Per Bag')
+                  ]),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                side: BorderSide(color: Color(0xFFCBD5E0)),
+              ),
+              child: Text('Cancel', style: TextStyle(color: Color(0xFF718096))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== STEP 2 DIALOG ====================
+
+class _Step2Dialog extends StatefulWidget {
+  final DateTime? currentDate;
+  final Function(DateTime) onSave;
+
+  const _Step2Dialog({required this.currentDate, required this.onSave});
+
+  @override
+  State<_Step2Dialog> createState() => _Step2DialogState();
+}
+
+class _Step2DialogState extends State<_Step2Dialog> {
+  late TextEditingController _dayController;
+  late TextEditingController _monthController;
+  late TextEditingController _yearController;
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+    _dayController =
+        TextEditingController(text: '${widget.currentDate?.day ?? now.day}');
+    _monthController = TextEditingController(
+        text: '${widget.currentDate?.month ?? now.month}');
+    _yearController =
+        TextEditingController(text: '${widget.currentDate?.year ?? now.year}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: EdgeInsets.all(25),
+        width: 500,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(top: BorderSide(color: Color(0xFFFF7B6B), width: 4)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Icon(Icons.arrow_back,
+                        size: 20, color: Color(0xFF5A67D8)),
+                  ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_today,
+                            size: 18, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Step 2: Set Initial Date',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 25),
+            Text('Enter Starting Date',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748))),
+            SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _dayController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        hintText: 'Day',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12))),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _monthController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        hintText: 'Month',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12))),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _yearController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        hintText: 'Year',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12))),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    int day = int.tryParse(_dayController.text) ?? 0;
+                    int month = int.tryParse(_monthController.text) ?? 0;
+                    int year = int.tryParse(_yearController.text) ?? 0;
+                    if (day >= 1 &&
+                        day <= 31 &&
+                        month >= 1 &&
+                        month <= 12 &&
+                        year >= 2023 &&
+                        year <= 2030) {
+                      widget.onSave(DateTime(year, month, day));
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text('Invalid date values'),
+                            backgroundColor: Color(0xFFF56565)),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFFF7B6B),
+                    padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  ),
+                  child: Text('Save Date & Continue',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+            SizedBox(height: 25),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                side: BorderSide(color: Color(0xFFCBD5E0)),
+              ),
+              child: Text('Cancel', style: TextStyle(color: Color(0xFF718096))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== STEP 3 DIALOG ====================
+
+class _Step3Dialog extends StatefulWidget {
+  final DateTime currentDate;
+  final int editingIndex;
+  final Map<String, dynamic>? editingEntry;
+  final Function(Map<String, dynamic>) onSave;
+
+  const _Step3Dialog({
+    required this.currentDate,
+    required this.editingIndex,
+    this.editingEntry,
+    required this.onSave,
+  });
+
+  @override
+  State<_Step3Dialog> createState() => _Step3DialogState();
+}
+
+class _Step3DialogState extends State<_Step3Dialog> {
+  late DateTime _currentDate;
+  late TextEditingController _drumsController;
+  late TextEditingController _bagsController;
+  late TextEditingController _customDayController;
+
+  bool _adSelected = false;
+  bool _aySelected = false;
+  bool _saSelected = false;
+  bool _naSelected = false;
+  bool _adilSelected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDate = widget.currentDate;
+    _drumsController = TextEditingController();
+    _bagsController = TextEditingController();
+    _customDayController = TextEditingController();
+
+    if (widget.editingEntry != null) {
+      _drumsController.text = '${widget.editingEntry!['drums']}';
+      _bagsController.text = '${widget.editingEntry!['bags']}';
+      List persons = widget.editingEntry!['persons'];
+      _adSelected = persons.contains('A.Ditta');
+      _aySelected = persons.contains('A.Yar');
+      _saSelected = persons.contains('Saleem');
+      _naSelected = persons.contains('Nazir');
+      _adilSelected = persons.contains('Adil');
+    }
+  }
+
+  String _getFormattedDate() {
+    List<String> months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${_currentDate.day}-${months[_currentDate.month - 1]}-${_currentDate.year}';
+  }
+
+  void _useSameDate() {
+    setState(() {});
+    _showSnackbar('Using same date', 'info');
+  }
+
+  void _useNextDate() {
+    setState(() {
+      _currentDate = _currentDate.add(Duration(days: 1));
+    });
+    _showSnackbar('Date advanced to next day', 'info');
+  }
+
+  void _usePreviousDate() {
+    setState(() {
+      _currentDate = _currentDate.subtract(Duration(days: 1));
+    });
+    _showSnackbar('Date moved to previous day', 'info');
+  }
+
+  void _useCustomDate() {
+    int day = int.tryParse(_customDayController.text) ?? 0;
+    if (day >= 1 && day <= 31) {
+      setState(() {
+        _currentDate = DateTime(_currentDate.year, _currentDate.month, day);
+      });
+      _showSnackbar('Date changed to day $day', 'info');
+      _customDayController.clear();
+    } else {
+      _showSnackbar('Please enter a valid day (1-31)', 'error');
+    }
+  }
+
+  void _selectAll() {
+    setState(() {
+      _adSelected = true;
+      _aySelected = true;
+      _saSelected = true;
+      _naSelected = true;
+      _adilSelected = true;
+    });
+  }
+
+  void _clearAll() {
+    setState(() {
+      _adSelected = false;
+      _aySelected = false;
+      _saSelected = false;
+      _naSelected = false;
+      _adilSelected = false;
+    });
+  }
+
+  void _addEntry() {
+    int drums = int.tryParse(_drumsController.text) ?? 0;
+    int bags = int.tryParse(_bagsController.text) ?? 0;
+
+    if (drums == 0 && bags == 0) {
+      _showSnackbar('Please enter at least one item (drums or bags)', 'error');
+      return;
+    }
+
+    List<String> persons = [];
+    if (_adSelected) persons.add('A.Ditta');
+    if (_aySelected) persons.add('A.Yar');
+    if (_saSelected) persons.add('Saleem');
+    if (_naSelected) persons.add('Nazir');
+    if (_adilSelected) persons.add('Adil');
+
+    if (persons.isEmpty) {
+      _showSnackbar('Please select at least one person', 'error');
+      return;
+    }
+
+    int total = (drums * DRUM_RATE) + (bags * BAG_RATE);
+    double share = persons.isNotEmpty ? total / persons.length : 0;
+
+    Map<String, dynamic> entry = {
+      'date': _getFormattedDate(),
+      'drums': drums,
+      'bags': bags,
+      'total': total,
+      'persons': persons,
+      'share': share,
+      'ad': _adSelected ? share.toStringAsFixed(2) : '-',
+      'ay': _aySelected ? share.toStringAsFixed(2) : '-',
+      'sa': _saSelected ? share.toStringAsFixed(2) : '-',
+      'na': _naSelected ? share.toStringAsFixed(2) : '-',
+      'adil': _adilSelected ? share.toStringAsFixed(2) : '-',
+    };
+
+    widget.onSave(entry);
+    Navigator.pop(context);
+  }
+
+  void _showSnackbar(String message, String type) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: type == 'success'
+            ? Color(0xFF48BB78)
+            : type == 'error'
+                ? Color(0xFFF56565)
+                : Color(0xFF5BA8FF),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 900,
+        padding: EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(top: BorderSide(color: Color(0xFFFF7B6B), width: 4)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Icon(Icons.arrow_back,
+                        size: 20, color: Color(0xFF5A67D8)),
+                  ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Color(0xFFFF7B6B), Color(0xFFFF5A5A)]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_circle, size: 18, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Step 3: Add New Entry',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 25),
+
+            // Row 1 - Date Control & Items Entry
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date Control
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Date Control',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5A67D8))),
+                        SizedBox(height: 12),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                colors: [Color(0xFF7FC8F8), Color(0xFF5BA8FF)]),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text('Current Date: ${_getFormattedDate()}',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
+                        SizedBox(height: 12),
+                        Text('Control the date manually:',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: ElevatedButton(
+                                    onPressed: _useSameDate,
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF48BB78)),
+                                    child: Text('Same Date',
+                                        style:
+                                            TextStyle(color: Colors.white)))),
+                            SizedBox(width: 8),
+                            Expanded(
+                                child: ElevatedButton(
+                                    onPressed: _useNextDate,
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFFFF7B6B)),
+                                    child: Text('Next Date',
+                                        style:
+                                            TextStyle(color: Colors.white)))),
+                            SizedBox(width: 8),
+                            Expanded(
+                                child: ElevatedButton(
+                                    onPressed: _usePreviousDate,
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF718096)),
+                                    child: Text('Previous Date',
+                                        style:
+                                            TextStyle(color: Colors.white)))),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          controller: _customDayController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                              labelText: 'Custom Day',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8))),
+                        ),
+                        SizedBox(height: 8),
+                        ElevatedButton(
+                            onPressed: _useCustomDate,
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF5A67D8)),
+                            child: Text('Set Custom Day',
+                                style: TextStyle(color: Colors.white))),
+                        SizedBox(height: 10),
+                        Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Color(0xFFF6AD55).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Color(0xFFF6AD55))),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info,
+                                  size: 16, color: Color(0xFFF6AD55)),
+                              SizedBox(width: 8),
+                              Expanded(
+                                  child: Text(
+                                      'Date will NOT auto-advance. You control when to change date.',
+                                      style: TextStyle(fontSize: 11))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+
+                // Items Entry
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Items Entry',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5A67D8))),
+                        SizedBox(height: 12),
+                        Text('Number of Drums',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        SizedBox(height: 5),
+                        TextField(
+                          controller: _drumsController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                              labelText: 'Enter Drums Quantity',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8))),
+                        ),
+                        SizedBox(height: 12),
+                        Text('Number of Bags',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        SizedBox(height: 5),
+                        TextField(
+                          controller: _bagsController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                              labelText: 'Enter Bags Quantity',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8))),
+                        ),
+                        // Total Calculation Display
+                        if ((int.tryParse(_drumsController.text) ?? 0) > 0 ||
+                            (int.tryParse(_bagsController.text) ?? 0) > 0)
+                          Container(
+                            margin: EdgeInsets.only(top: 12),
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                Color(0xFFFFF5E6),
+                                Color(0xFFFFF0E0)
+                              ]),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Color(0xFFFF7B6B)),
+                            ),
+                            child: Column(
+                              children: [
+                                Text('Total Calculation:',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                Text(
+                                    'Drums: ${int.tryParse(_drumsController.text) ?? 0} × Rs.$DRUM_RATE = Rs.${(int.tryParse(_drumsController.text) ?? 0) * DRUM_RATE}'),
+                                Text(
+                                    'Bags: ${int.tryParse(_bagsController.text) ?? 0} × Rs.$BAG_RATE = Rs.${(int.tryParse(_bagsController.text) ?? 0) * BAG_RATE}'),
+                                Text(
+                                    'Total: Rs.${((int.tryParse(_drumsController.text) ?? 0) * DRUM_RATE) + ((int.tryParse(_bagsController.text) ?? 0) * BAG_RATE)}',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF48BB78))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+
+            // Row 2 - Persons & Actions
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Persons Selection
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Divide Among Persons',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5A67D8))),
+                        SizedBox(height: 8),
+                        Text('Select the persons to divide the amount:',
+                            style: TextStyle(
+                                fontSize: 13, color: Color(0xFF718096))),
+                        SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilterChip(
+                              label: Text('A. Ditta'),
+                              selected: _adSelected,
+                              onSelected: (selected) =>
+                                  setState(() => _adSelected = selected),
+                              backgroundColor:
+                                  Color(0xFFFF7B6B).withOpacity(0.2),
+                              selectedColor: Color(0xFFFF7B6B),
+                              labelStyle: TextStyle(
+                                  color: _adSelected
+                                      ? Colors.white
+                                      : Color(0xFFFF7B6B)),
+                            ),
+                            FilterChip(
+                              label: Text('A. Yar'),
+                              selected: _aySelected,
+                              onSelected: (selected) =>
+                                  setState(() => _aySelected = selected),
+                              backgroundColor:
+                                  Color(0xFFFF7B6B).withOpacity(0.2),
+                              selectedColor: Color(0xFFFF7B6B),
+                              labelStyle: TextStyle(
+                                  color: _aySelected
+                                      ? Colors.white
+                                      : Color(0xFFFF7B6B)),
+                            ),
+                            FilterChip(
+                              label: Text('Saleem'),
+                              selected: _saSelected,
+                              onSelected: (selected) =>
+                                  setState(() => _saSelected = selected),
+                              backgroundColor:
+                                  Color(0xFFFF7B6B).withOpacity(0.2),
+                              selectedColor: Color(0xFFFF7B6B),
+                              labelStyle: TextStyle(
+                                  color: _saSelected
+                                      ? Colors.white
+                                      : Color(0xFFFF7B6B)),
+                            ),
+                            FilterChip(
+                              label: Text('Nazir'),
+                              selected: _naSelected,
+                              onSelected: (selected) =>
+                                  setState(() => _naSelected = selected),
+                              backgroundColor:
+                                  Color(0xFFFF7B6B).withOpacity(0.2),
+                              selectedColor: Color(0xFFFF7B6B),
+                              labelStyle: TextStyle(
+                                  color: _naSelected
+                                      ? Colors.white
+                                      : Color(0xFFFF7B6B)),
+                            ),
+                            FilterChip(
+                              label: Text('Adil'),
+                              selected: _adilSelected,
+                              onSelected: (selected) =>
+                                  setState(() => _adilSelected = selected),
+                              backgroundColor:
+                                  Color(0xFFFF7B6B).withOpacity(0.2),
+                              selectedColor: Color(0xFFFF7B6B),
+                              labelStyle: TextStyle(
+                                  color: _adilSelected
+                                      ? Colors.white
+                                      : Color(0xFFFF7B6B)),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: ElevatedButton(
+                                    onPressed: _selectAll,
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF48BB78)),
+                                    child: Text('Select All',
+                                        style:
+                                            TextStyle(color: Colors.white)))),
+                            SizedBox(width: 8),
+                            Expanded(
+                                child: ElevatedButton(
+                                    onPressed: _clearAll,
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF718096)),
+                                    child: Text('Clear All',
+                                        style:
+                                            TextStyle(color: Colors.white)))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+
+                // Action Buttons
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF7FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('Actions',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5A67D8))),
+                        SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _addEntry,
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFFF7B6B),
+                              padding: EdgeInsets.symmetric(vertical: 14)),
+                          child: Text(
+                              widget.editingIndex >= 0
+                                  ? 'Update Entry'
+                                  : 'Add Entry',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            _drumsController.clear();
+                            _bagsController.clear();
+                            _customDayController.clear();
+                            _clearAll();
+                            _showSnackbar('Form reset for new entry', 'info');
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF6AD55),
+                              padding: EdgeInsets.symmetric(vertical: 14)),
+                          child: Text('Reset Form',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF718096),
+                              padding: EdgeInsets.symmetric(vertical: 14)),
+                          child: Text('Close Window',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
